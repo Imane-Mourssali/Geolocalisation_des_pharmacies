@@ -43,6 +43,8 @@ export class ShowPharmaciePage implements OnInit {
         this.getUserLocation();
       //  this.getDirection()
 
+
+
     }
 
 

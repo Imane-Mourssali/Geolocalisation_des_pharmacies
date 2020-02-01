@@ -1,6 +1,10 @@
 import { Component, OnInit } from '@angular/core';
-import {AuthentificationService} from "../service/authentification.service";
 import {Router} from "@angular/router";
+import {UserModel} from "../models/user.model";
+import {MatSnackBar} from "@angular/material";
+import {AuthLoginInfo} from "../../auth/login-info";
+import {TokenStorageService} from "../../auth/token-storage.service";
+import {AuthService} from "../../auth/auth.service";
 
 @Component({
   selector: 'app-login',
@@ -8,16 +12,49 @@ import {Router} from "@angular/router";
   styleUrls: ['./login.page.scss'],
 })
 export class LoginPage implements OnInit {
+    form: any = {};
+    isLoggedIn = false;
+    isLoginFailed = false;
+    errorMessage = '';
+    roles: string[] = [];
+    private loginInfo: AuthLoginInfo;
+    private authority: string;
 
-  constructor(private authenticationService:AuthentificationService,private router:Router) { }
+    constructor( private authService: AuthService, private tokenStorage: TokenStorageService) {
 
-  ngOnInit() {
-  }
-onLogin(user){
-    let res =this.authenticationService.login(user.username,user.password);
-    if(res==true){
-      this.router.navigateByUrl('/menu/home');
     }
-    else this.router.navigateByUrl('login');
-  }
+
+    ngOnInit() {
+        if (this.tokenStorage.getToken()) {
+            this.isLoggedIn = true;
+           // this.roles = this.tokenStorage.getAuthorities();
+        }
+    }
+
+    onSubmit() {
+        console.log(this.form);
+
+        this.loginInfo = new AuthLoginInfo(
+            this.form.username,
+            this.form.password);
+
+        this.authService.attemptAuth(this.loginInfo).subscribe(
+            data => {
+                this.tokenStorage.saveToken(data.accessToken);
+                this.tokenStorage.saveUsername(data.username);
+                this.tokenStorage.saveAuthorities(data.authorities);
+
+                this.isLoginFailed = false;
+                this.isLoggedIn = true;
+                window.location.href = "/menu/home"
+               // this.roles = this.tokenStorage.getAuthorities();
+            },
+            error => {
+                console.log(error);
+                this.errorMessage = error.error.message;
+                this.isLoginFailed = true;
+            }
+        );
+    }
+
 }
